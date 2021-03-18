@@ -225,6 +225,28 @@ class Iso7816Commands(CommandSet):
 		if context['ERR']:
 			raise RuntimeError("unable to export %i file(s)" % context['ERR'])
 
+	def check(self, filename, context):
+		context['COUNT'] += 1
+		path_list = self._cmd.rs.selected_file.fully_qualified_path(True)
+		output_str = "checking: %s" % ('/'.join(path_list)) + "/" + filename
+		output_str += " " * 45
+		output_str = output_str[0:45]
+		try:
+			fcp_dec = self._cmd.rs.select(filename, self._cmd)
+			fcp_dec = self._cmd.rs.select("..", self._cmd)
+			output_str += " ok"
+		except Exception as e:
+			output_str += " error: " + str(e)
+			context['ERR'] += 1
+		self._cmd.poutput(output_str)
+
+	def do_check(self, opts):
+		"""Check all files in the file system for availability"""
+		context = {'ERR':0, 'COUNT':0}
+		self.walk(0, self.check, context)
+		self._cmd.poutput("total files visited: %u" % context['COUNT'])
+		self._cmd.poutput("bad files:     %u" % context['ERR'])
+
 
 @with_default_category('USIM Commands')
 class UsimCommands(CommandSet):
