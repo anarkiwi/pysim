@@ -31,7 +31,7 @@ from pySim.utils import h2b, b2h
 
 class SerialSimLink(LinkBase):
 
-	def __init__(self, device='/dev/ttyUSB0', baudrate=9600, rst='-rts', debug=False):
+	def __init__(self, device='/dev/ttyUSB0', baudrate=9600, rst='-rts', debug=True):
 		if not os.path.exists(device):
 			raise ValueError("device file %s does not exist -- abort" % device)
 		self._sl = serial.Serial(
@@ -49,8 +49,10 @@ class SerialSimLink(LinkBase):
 		self._atr = None
 
 	def __del__(self):
-		if (hasattr(self, "_sl")):
-			self._sl.close()
+		return
+		#if (hasattr(self, "_sl")):
+		#	if self._sl:
+		#		self._sl.close()
 
 	def wait_for_card(self, timeout=None, newcardonly=False):
 		# Direct try
@@ -186,7 +188,7 @@ class SerialSimLink(LinkBase):
 		"""see LinkBase.send_apdu_raw"""
 
 		pdu = h2b(pdu)
-		data_len = ord(pdu[4])	# P3
+		data_len = pdu[4]	# P3
 
 		# Send first CLASS,INS,P1,P2,P3
 		self._tx_string(pdu[0:5])
@@ -197,7 +199,7 @@ class SerialSimLink(LinkBase):
 		#  - SW1: The card can apparently proceed ...
 		while True:
 			b = self._rx_byte()
-			if b == pdu[1]:
+			if b == bytes([pdu[1]]):
 				break
 			elif b != '\x60':
 				# Ok, it 'could' be SW1
@@ -217,7 +219,7 @@ class SerialSimLink(LinkBase):
 		#  length = [P3 - tx_data (=len(pdu)-len(hdr)) + 2 (SW1//2) ]
 		to_recv = data_len - len(pdu) + 5 + 2
 
-		data = ''
+		data = bytes()
 		while (len(data) < to_recv):
 			b = self._rx_byte()
 			if (to_recv == 2) and (b == '\x60'): # Ignore NIL if we have no RX data (hack ?)

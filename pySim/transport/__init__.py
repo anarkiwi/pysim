@@ -93,7 +93,6 @@ class LinkBase(object):
 			    sw   : string (in hex) of status word (ex. "9000")
 		"""
 		rv = self.send_apdu(pdu)
-
 		if not sw_match(rv[1], sw):
 			raise SwMatchError(rv[1], sw.lower())
 		return rv
